@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Problem {
+  id                     String    @id @default(cuid())
+  title                  String
+  slug                   String    @unique
+  description            String
+  difficulty             String
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  bonusRequirements      String?
+  concepts               String
+  functionalRequirements String
+  hints                  String
+  rubric                 String
+  attempts               Attempt[]
+
+  @@index([difficulty])
+}
+
+model Attempt {
+  id          String       @id @default(cuid())
+  problemId   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  problem     Problem      @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+
+  @@index([problemId])
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  attemptId    String
+  code         String
+  diagram      String
+  explanation  String
+  status       SubmissionStatus @default(DRAFT)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  evaluation   Evaluation?
+  attempt      Attempt          @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([status])
+}
+
+model Evaluation {
+  id           String      @id @default(cuid())
+  submissionId String      @unique
+  score        Int?
+  summary      String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  feedback     Feedback[]
+}
+
+model Feedback {
+  id           String     @id @default(cuid())
+  evaluationId String
+  severity     Severity
+  problem      String
+  whyItMatters String
+  suggestion   String
+  createdAt    DateTime   @default(now())
+  criterion    String
+  evidence     String
+  verdict      String
+  evaluator    String?
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@index([evaluationId])
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  EVALUATING
+  COMPLETED
+  FAILED
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
